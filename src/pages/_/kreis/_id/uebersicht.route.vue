@@ -78,8 +78,8 @@ div
           :prepend-icon='t.tage < 0 ? "event_busy" : "event"'
         )
           v-list-item-title.text-wrap {{ t.label }}
-          v-list-item-subtitle
-            | {{ datumDe(t.datumISO) }} ·
+          v-list-item-subtitle.text-wrap
+            | {{ t.abschnitt }} · {{ datumDe(t.datumISO) }} ·
             strong.ml-1(:class='t.tage < 0 ? "text-error" : t.tage <= 30 ? "text-warning" : ""') {{ wannText(t.tage) }}
       v-card-text.text-caption.text-medium-emphasis.pt-0
         | Erinnerungs-Mails gehen an die Schutzkonzept-E-Mail-Adressen des
