@@ -1,0 +1,74 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  push:
+
+concurrency:
+  # keine parallelen Builds/Deploys für denselben Branch
+  group: ci-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      # checkout zuerst — setup-node liest die Node-Version aus .nvmrc
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # API_BASE ist eine Compile-Time-Konstante (vite define). Explizit
+        # gesetzt statt sich auf den Default zu verlassen: so steht im Build-Log,
+        # gegen welche API dieses Artefakt läuft.
+        run: npm run build
+        env:
+          API_BASE: https://api.ec-nordbund.de
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Types
+        run: npm run types
+
+      # Deploy wie bei EC-Verwaltung (rsync über SSH-Deploy-Key), nur von main.
+      - name: Setup deploy
+        if: github.ref_name == 'main'
+        run: |
+          echo "${{ secrets.DEPLOY_KEY }}" > deploy_key
+          chmod 600 ./deploy_key
+
+      # mkdir -p allein genuegt nicht als Vorbedingung: existiert das
+      # Verzeichnis bereits, meldet es Erfolg, ohne je zu pruefen, ob
+      # geschrieben werden darf. Der eigentliche Fehler faellt dann erst im
+      # rsync an und sieht dort nach einem Transportproblem aus. Deshalb hier
+      # ein echter Schreibtest mit klarer Meldung.
+      - name: Ensure Folder
+        if: github.ref_name == 'main'
+        run: |
+          ssh -i ./deploy_key -o StrictHostKeyChecking=no deployer@ec-nordbund.de '
+            set -e
+            ZIEL=/webpage/schutzkonzept.ec-nordbund.de
+            mkdir -p "$ZIEL"
+            if ! touch "$ZIEL/.deploy-test" 2>/dev/null; then
+              echo "Kein Schreibrecht in $ZIEL als $(id -un):" >&2
+              ls -ld "$ZIEL" >&2
+              exit 1
+            fi
+            rm -f "$ZIEL/.deploy-test"
+          '
+
+      - name: Deploy to schutzkonzept.ec-nordbund.de
+        if: github.ref_name == 'main'
+        run: |
+          rsync -chrvz --stats --delete \
+            -e 'ssh -i ./deploy_key -o StrictHostKeyChecking=no' \
+            ./dist/ deployer@ec-nordbund.de:/webpage/schutzkonzept.ec-nordbund.de/

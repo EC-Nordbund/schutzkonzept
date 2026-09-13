@@ -1,0 +1,17 @@
+{
+  "name": "Schutzkonzept · EC-Nordbund",
+  "short_name": "Schutzkonzept",
+  "lang": "de-DE",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#8fb217",
+  "background_color": "#eef3dc",
+  "description": "Schutzkonzept zur Gewaltprävention der EC-Kreise",
+  "icons": [
+    { "src": "icons/ec-logo-16.png", "sizes": "16x16", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/ec-logo-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/ec-logo-64.png", "sizes": "64x64", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/ec-logo-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/ec-logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
