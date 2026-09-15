@@ -58,6 +58,39 @@ v-alert.mb-4(
     @click='neueZeile'
   ) {{ feld.eintragLabel || 'Eintrag' }} hinzufügen
 
+//- Foto: der Browser verkleinert die Datei (bild.util), gespeichert wird
+//- reines base64 in daten[key]; die Vorschau ist eine data:-URL daraus.
+.mb-4(v-else-if='feld.typ === "foto"')
+  .text-body-1(:class='{ "text-error": fehltMarkierung }')
+    | {{ feld.label }}
+    span.text-error(v-if='feld.pflicht') &nbsp;*
+  .d-flex.flex-wrap.align-center.ga-4.mt-1
+    img.foto-vorschau(v-if='fotoUrl', :src='fotoUrl', :alt='feld.label')
+    .text-body-2.text-medium-emphasis(v-else) {{ readonly ? 'Kein Foto.' : 'Noch kein Foto ausgewählt.' }}
+    .d-flex.flex-column.ga-2(v-if='!readonly')
+      v-btn(
+        prepend-icon='photo_camera',
+        variant='tonal',
+        size='small',
+        :loading='fotoLaedt',
+        @click='fotoInput?.click()'
+      ) {{ fotoUrl ? 'Foto ersetzen' : 'Foto auswählen' }}
+      v-btn(
+        v-if='fotoUrl',
+        prepend-icon='delete',
+        variant='text',
+        size='small',
+        @click='fotoEntfernen'
+      ) Entfernen
+  input.d-none(
+    ref='fotoInput',
+    type='file',
+    accept='image/*',
+    @change='fotoGewaehlt'
+  )
+  .text-caption.text-error.mt-1(v-if='fotoFehler') {{ fotoFehler }}
+  .text-caption.text-medium-emphasis.text-pre.mt-1(v-if='feld.hilfe') {{ feld.hilfe }}
+
 //- Mehrfachauswahl: eine Checkbox je Option, flache Schlüssel key_option
 .mb-4(v-else-if='feld.typ === "multiselect"')
   .text-body-1
@@ -186,10 +219,14 @@ v-text-field.mb-2(
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { verkleinere } from '../util/bild.util'
 import {
+  FOTO_MAX_PX,
   GRENZEN,
   aufgeloesteRegeln,
+  fotoDataUrl,
+  gueltigesFoto,
   heuteISO,
   istAusgefuellt,
   regelHinweis,
@@ -344,11 +381,61 @@ function zeilenTitel(z: Zeile, i: number) {
 function setzeZahl(v: string) {
   daten.value[props.feld.key] = v === '' || v === null ? null : Number(v)
 }
+
+/* ------------------------------------------------------------- Foto --- */
+
+const fotoInput = ref<HTMLInputElement | null>(null)
+const fotoLaedt = ref(false)
+const fotoFehler = ref('')
+
+const fotoUrl = computed(() => fotoDataUrl(daten.value[props.feld.key]))
+
+/**
+ * Datei verkleinern (JPEG, längste Kante FOTO_MAX_PX) und als base64 in die
+ * Daten schreiben -- dasselbe Format, das der Server prüft (gueltigesFoto).
+ * Passt das Ergebnis nicht unter GRENZEN.fotoZeichen (sehr detailreiches
+ * Bild), ein zweiter Versuch mit halber Kantenlänge.
+ */
+async function fotoGewaehlt(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const datei = input.files?.[0]
+  input.value = ''
+  if (!datei) return
+  fotoFehler.value = ''
+  fotoLaedt.value = true
+  try {
+    let bild = await verkleinere(datei, FOTO_MAX_PX, 0.8)
+    if (bild.base64.length > GRENZEN.fotoZeichen) {
+      bild = await verkleinere(datei, Math.round(FOTO_MAX_PX / 2), 0.7)
+    }
+    if (!gueltigesFoto(bild.base64)) {
+      throw new Error('Das Bild ist auch verkleinert noch zu groß.')
+    }
+    daten.value[props.feld.key] = bild.base64
+  } catch (e) {
+    fotoFehler.value =
+      e instanceof Error ? e.message : 'Das Bild konnte nicht gelesen werden.'
+  } finally {
+    fotoLaedt.value = false
+  }
+}
+
+function fotoEntfernen() {
+  if (!window.confirm('Foto wirklich entfernen?')) return
+  fotoFehler.value = ''
+  daten.value[props.feld.key] = ''
+}
 </script>
 
 <style scoped>
 .text-pre {
   white-space: pre-line;
+}
+.foto-vorschau {
+  max-width: 160px;
+  max-height: 200px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 /* Hilfetext und Regel-Hinweis stehen in einem Hint, getrennt durch Umbruch. */
 :deep(.v-messages__message) {

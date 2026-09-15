@@ -31,6 +31,7 @@ Portal und dieses Repo müssen dabei exakt dasselbe Ergebnis liefern.
 | `src/lib/dialogHost.lib.vue` | `src/lib/dialogHost.lib.vue` | ja (bis auf Kopfkommentar) |
 | `src/config/theme.ts` | `src/config/theme.ts` | ja (bis auf Kopfkommentar) |
 | `src/util/download.util.ts` | `src/util/download.util.ts` | ja (bis auf Kopfkommentar) |
+| `src/util/bild.util.ts` | `src/util/bild.util.ts` | ja (bis auf Kopfkommentar) – `feld.vue` (Foto-Feld) braucht es |
 
 ## Bewusst abweichend
 
