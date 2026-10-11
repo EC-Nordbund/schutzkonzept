@@ -124,6 +124,16 @@ v-alert.mb-4(
     :hide-details='!feld.hilfe'
   )
     v-radio(v-for='o in feld.optionen', :key='o.id', :label='o.label', :value='o.key')
+  //- Radios lassen sich per Klick nicht wieder abwählen -> eigener Knopf.
+  //- Leerwert '' wie in neueZeile(); gilt auch für Radio-Spalten in Tabellen.
+  v-btn.ml-n1(
+    v-if='!readonly && daten[feld.key]',
+    variant='text',
+    size='small',
+    density='compact',
+    color='medium-emphasis',
+    @click='daten[feld.key] = ""'
+  ) Auswahl aufheben
 
 v-checkbox.mb-2(
   v-else-if='feld.typ === "checkbox"',
