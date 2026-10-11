@@ -195,6 +195,23 @@ v-text-field.mb-2(
   @update:model-value='setzeZahl'
 )
 
+//- Hinweis-Tabelle: fester Inhalt der Verwaltung, nur Anzeige. Die Zellen
+//- sind reiner Text (Interpolation, kein v-html); Zeilenumbrüche macht das
+//- CSS. Auf schmalen Bildschirmen scrollt die Tabelle waagerecht.
+.mb-4(v-else-if='feld.typ === "infotabelle"')
+  .text-subtitle-1.font-weight-medium.mb-1(v-if='feld.label') {{ feld.label }}
+  .text-body-2.text-medium-emphasis.text-pre.mb-2(v-if='feld.hilfe') {{ feld.hilfe }}
+  v-table.hinweis-tabelle(density='compact')
+    thead(v-if='feld.tabelle?.kopfzeile && feld.tabelle.zeilen.length')
+      tr
+        th(v-for='(zelle, j) in feld.tabelle.zeilen[0]', :key='j', scope='col') {{ zelle }}
+    tbody
+      tr(
+        v-for='(zeile, i) in (feld.tabelle?.zeilen ?? []).slice(feld.tabelle?.kopfzeile ? 1 : 0)',
+        :key='i'
+      )
+        td(v-for='(zelle, j) in zeile', :key='j') {{ zelle }}
+
 //- Datum: min/max aus den aufgelösten Regeln sperren den Kalender-Picker,
 //- Tippen bleibt möglich -- deshalb zusätzlich die Vuetify-Regel.
 v-text-field.mb-2(
@@ -450,5 +467,34 @@ function fotoEntfernen() {
 /* Hilfetext und Regel-Hinweis stehen in einem Hint, getrennt durch Umbruch. */
 :deep(.v-messages__message) {
   white-space: pre-line;
+}
+/* Hinweis-Tabelle: Raster, Umbrüche im Zelltext, Mindestbreite je Spalte --
+   passt sie nicht, scrollt der Wrapper von v-table waagerecht. break-word
+   statt anywhere: Wörter bleiben ganz, die Spalte wird dafür so breit wie
+   ihr längstes Wort. */
+.hinweis-tabelle {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.hinweis-tabelle th,
+.hinweis-tabelle td {
+  min-width: 9em;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  white-space: pre-line;
+  vertical-align: top;
+  overflow-wrap: break-word;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+.hinweis-tabelle th + th,
+.hinweis-tabelle td + td {
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+.hinweis-tabelle th {
+  font-weight: 600 !important;
+  background: rgba(0, 0, 0, 0.05);
+}
+.hinweis-tabelle tbody tr:last-child td {
+  border-bottom: 0;
 }
 </style>
